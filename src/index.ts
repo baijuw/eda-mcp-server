@@ -60,6 +60,10 @@ import {
 } from "./tools/kubectl-rollout.js";
 import { registerPromptHandlers } from "./prompts/index.js";
 import { ping, pingSchema } from "./tools/ping.js";
+import { 
+  workflowResource, 
+  workflowResourceSchema 
+} from "./tools/workflow-resource.js";
 
 // Check environment variables for tool filtering
 const allowOnlyReadonlyTools = process.env.ALLOW_ONLY_READONLY_TOOLS === "true";
@@ -76,6 +80,7 @@ const readonlyTools = [
   explainResourceSchema,
   listApiResourcesSchema,
   pingSchema,
+  workflowResourceSchema,
 ];
 
 // Define destructive tools (delete and uninstall operations)
@@ -125,6 +130,9 @@ const allTools = [
 
   // Ping utility
   pingSchema,
+  
+  // Nokia EDA workflow resources
+  workflowResourceSchema,
 ];
 
 const k8sManager = new KubernetesManager();
@@ -474,6 +482,17 @@ server.setRequestHandler(
               namespace?: string;
               command: string | string[];
               container?: string;
+            }
+          );
+        }
+
+        case "workflow_resource": {
+          return await workflowResource(
+            k8sManager,
+            input as {
+              resourceUri?: string;
+              listAll?: boolean;
+              category?: string;
             }
           );
         }

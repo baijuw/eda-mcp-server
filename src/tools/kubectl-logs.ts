@@ -61,7 +61,7 @@ export const kubectlLogsSchema = {
         description: "Filter resources by label selector",
       },
     },
-    required: ["resourceType", "name", "namespace"],
+    required: ["resourceType", "name"],
   },
 } as const;
 

@@ -50,7 +50,7 @@ export const kubectlRolloutSchema = {
         default: false,
       },
     },
-    required: ["subCommand", "resourceType", "name", "namespace"],
+    required: ["subCommand", "resourceType", "name"],
   },
 };
 
