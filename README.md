@@ -1,4 +1,4 @@
-# MCP Server Kubernetes
+# EDA MCP Server Kubernetes
 
 [![CI](https://github.com/Flux159/mcp-server-kubernetes/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/mcp-server-kubernetes/actions/workflows/ci.yml)
 [![Language](https://img.shields.io/github/languages/top/Flux159/mcp-server-kubernetes)](https://github.com/yourusername/mcp-server-kubernetes)
@@ -11,11 +11,7 @@
 [![Last Commit](https://img.shields.io/github/last-commit/Flux159/mcp-server-kubernetes)](https://github.com/Flux159/mcp-server-kubernetes/commits/main)
 [![smithery badge](https://smithery.ai/badge/mcp-server-kubernetes)](https://smithery.ai/protocol/mcp-server-kubernetes)
 
-MCP Server that can connect to a Kubernetes cluster and manage it. Supports loading kubeconfig from multiple sources in priority order.
-
-https://github.com/user-attachments/assets/f25f8f4e-4d04-479b-9ae0-5dac452dd2ed
-
-<a href="https://glama.ai/mcp/servers/w71ieamqrt"><img width="380" height="200" src="https://glama.ai/mcp/servers/w71ieamqrt/badge" /></a>
+EDA MCP Server forked from [mcp-server-kubernetes](https://github.com/Flux159/mcp-server-kubernetes.git) that can connect to a Kubernetes cluster and manage it. Supports loading kubeconfig from multiple sources in priority order.
 
 ## Usage with Claude Desktop
 
@@ -90,6 +86,7 @@ npx mcp-chat --config "%APPDATA%\Claude\claude_desktop_config.json"
   - Run Helm operations
     - Install, upgrade, and uninstall charts
     - Support for custom values, repositories, and versions
+- [x] Workflow resource tool (`workflow-resource`) for complex multi-step operations
 - [x] Troubleshooting Prompt (`k8s-diagnose`)
   - Guides through a systematic Kubernetes troubleshooting flow for pods based on a keyword and optional namespace.
 - [x] Non-destructive mode for read and create/update-only access to clusters
