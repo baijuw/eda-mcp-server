@@ -268,29 +268,7 @@ See this [DeepWiki link](https://deepwiki.com/Flux159/mcp-server-kubernetes) for
 
 ## Publishing new release
 
-Go to the [releases page](https://github.com/Flux159/mcp-server-kubernetes/releases), click on "Draft New Release", click "Choose a tag" and create a new tag by typing out a new version number using "v{major}.{minor}.{patch}" semver format. Then, write a release title "Release v{major}.{minor}.{patch}" and description / changelog if necessary and click "Publish Release".
 
-This will create a new tag which will trigger a new release build via the cd.yml workflow. Once successful, the new release will be published to [npm](https://www.npmjs.com/package/mcp-server-kubernetes). Note that there is no need to update the package.json version manually, as the workflow will automatically update the version number in the package.json file & push a commit to main.
 
-## Not planned
 
-Adding clusters to kubectx.
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Flux159/mcp-server-kubernetes&type=Date)](https://www.star-history.com/#Flux159/mcp-server-kubernetes&Date)
-
-## 🖊️ Cite
-
-If you find this repo useful, please cite:
-
-```
-@software{Patel_MCP_Server_Kubernetes_2024,
-author = {Patel, Paras and Sonwalkar, Suyog},
-month = jul,
-title = {{MCP Server Kubernetes}},
-url = {https://github.com/Flux159/mcp-server-kubernetes},
-version = {2.5.0},
-year = {2024}
-}
-```
