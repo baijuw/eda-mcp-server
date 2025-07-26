@@ -226,17 +226,47 @@ sequenceDiagram
     participant Handler as Request Handler
     participant K8sManager as KubernetesManager
     participant K8s as Kubernetes API
-
     Note over Transport: StdioTransport or<br>SSE Transport
+    Note over Client: Client acts as proxy between<br>AI models (Claude, GPT, etc.) and MCP Server
+    
+    %% Connection and tool advertisement phase
+    Client->>Transport: Establish connection
+    Transport->>Server: Open stream
+    Server-->>Client: Advertise available tools
+    Note over Server,Client: Tool list includes schemas,<br>descriptions, operation types
+    
+    %% Initialization phase - Context enrichment
+    Note over Client,Server: Initialization: Context Enrichment
+    Client->>Transport: Request CRD discovery
+    Transport->>Server: Forward CRD request
+    Server->>Handler: Route to CRD handler
+    Handler->>K8sManager: Get all CRDs
+    K8sManager->>K8s: Query CRDs API
+    K8s-->>K8sManager: Return CRD definitions
+    K8sManager-->>Handler: Format CRD data
+    Handler-->>Server: Return CRD list
+    Server-->>Client: CRD schemas and definitions
 
+    Client->>Transport: Request workflow-resource tool
+    Transport->>Server: Forward workflow-resource request
+    Server->>Handler: Route to workflow-resource handler
+    Handler->>K8sManager: Get EDA custom resources
+    K8sManager->>K8s: Query custom resources
+    K8s-->>K8sManager: Return custom resource data
+    K8sManager-->>Handler: Format resource data
+    Handler-->>Server: Return resource inventory
+    Server-->>Client: Available EDA resources
+
+    Note over Client: Context now enriched with<br>CRDs and EDA resources
+    
+    %% Operational phase
+    Note over Client,Server: Operational phase - Direct EDA operations
     Client->>Transport: Send Request
     Transport->>Server: Forward Request
-
     alt Tools Request
         Server->>Filter: Filter available tools
         Note over Filter: Remove destructive tools<br>if in non-destructive mode
         Filter->>Handler: Route to tools handler
-
         alt kubectl operations
             Handler->>K8sManager: Execute kubectl operation
             K8sManager->>K8s: Make API call
@@ -246,8 +276,10 @@ sequenceDiagram
         else Port Forward operations
             Handler->>K8sManager: Set up port forwarding
             K8sManager->>K8s: Make API call
+        else EDA Custom Resource operations
+            Handler->>K8sManager: Execute EDA CR operation
+            K8sManager->>K8s: Make Custom Resource API call
         end
-
         K8s-->>K8sManager: Return result
         K8sManager-->>Handler: Process response
         Handler-->>Server: Return tool result
@@ -259,9 +291,6 @@ sequenceDiagram
         K8sManager-->>Handler: Format response
         Handler-->>Server: Return resource data
     end
-
-    Server-->>Transport: Send Response
-    Transport-->>Client: Return Final Response
 ```
 
 See this [DeepWiki link](https://deepwiki.com/Flux159/mcp-server-kubernetes) for a more indepth architecture overview created by Devin.
