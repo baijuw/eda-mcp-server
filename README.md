@@ -170,10 +170,6 @@ npx @modelcontextprotocol/inspector node dist/index.js
 bun run chat
 ```
 
-## Contributing
-
-See the [CONTRIBUTING.md](CONTRIBUTING.md) file for details.
-
 ## Advanced
 
 ### Non-Destructive Mode
