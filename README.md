@@ -1,17 +1,31 @@
 # EDA MCP Server Kubernetes
 
-[![CI](https://github.com/Flux159/mcp-server-kubernetes/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/mcp-server-kubernetes/actions/workflows/ci.yml)
-[![Language](https://img.shields.io/github/languages/top/Flux159/mcp-server-kubernetes)](https://github.com/yourusername/mcp-server-kubernetes)
-[![Bun](https://img.shields.io/badge/runtime-bun-orange)](https://bun.sh)
-[![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=flat&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
-[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Stars](https://img.shields.io/github/stars/Flux159/mcp-server-kubernetes)](https://github.com/Flux159/mcp-server-kubernetes/stargazers)
-[![Issues](https://img.shields.io/github/issues/Flux159/mcp-server-kubernetes)](https://github.com/Flux159/mcp-server-kubernetes/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Flux159/mcp-server-kubernetes/pulls)
-[![Last Commit](https://img.shields.io/github/last-commit/Flux159/mcp-server-kubernetes)](https://github.com/Flux159/mcp-server-kubernetes/commits/main)
-[![smithery badge](https://smithery.ai/badge/mcp-server-kubernetes)](https://smithery.ai/protocol/mcp-server-kubernetes)
-
 EDA MCP Server forked from [mcp-server-kubernetes](https://github.com/Flux159/mcp-server-kubernetes.git) that can connect to a Kubernetes cluster and manage it. Supports loading kubeconfig from multiple sources in priority order.
+
+
+## Docker Build
+
+### Standard Build
+```bash
+docker build . -t eda-mcp-server
+```
+
+### Build with Proxy (if behind corporate proxy)
+```bash
+docker build . --build-arg HTTP_PROXY=<proxy server> --build-arg HTTPS_PROXY=<proxy server> --build-arg NO_PROXY=<subnets to skip> -t eda-mcp-server
+```
+
+## Docker Run
+
+Run the EDA MCP server in a container:
+
+```bash
+docker  run --rm -it -p 3001:3001 -e SPAWN_MAX_BUFFER=10485760 -e ENABLE_UNSAFE_SSE_TRANSPORT=1  -e PORT=3001  -e HOST=0.0.0.0 -v ~/.kube/config:/home/appuser/.kube/config eda-mcp-server
+```
+
+**Port 3001** is used because the MCP server inside the container listens on port 3001.
+
+**SPAWN_MAX_BUFFER** is set to 10MB (10485760 bytes) as the client often needs to read all CRDs to understand certain Kubernetes interactions, requiring a larger buffer than the default.
 
 ## Usage with Claude Desktop
 
