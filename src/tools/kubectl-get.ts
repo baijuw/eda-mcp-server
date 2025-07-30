@@ -51,6 +51,12 @@ export const kubectlGetSchema = {
         description:
           "Sort events by a field (default: lastTimestamp). Only applicable for events.",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
     },
     required: ["resourceType"],
   },
@@ -67,6 +73,7 @@ export async function kubectlGet(
     labelSelector?: string;
     fieldSelector?: string;
     sortBy?: string;
+    context?: string;
   }
 ) {
   try {
@@ -78,6 +85,7 @@ export async function kubectlGet(
     const labelSelector = input.labelSelector || "";
     const fieldSelector = input.fieldSelector || "";
     const sortBy = input.sortBy;
+    const context = input.context || "";
 
     // Build the kubectl command
     const command = "kubectl";
@@ -101,6 +109,10 @@ export async function kubectlGet(
       args.push("--all-namespaces");
     } else if (namespace && !isNonNamespacedResource(resourceType)) {
       args.push("-n", namespace);
+    }
+
+    if (context) {
+      args.push("--context", context);
     }
 
     // Add label selector if provided

@@ -25,6 +25,12 @@ export const explainResourceSchema = {
         description: "Print the fields of fields recursively",
         default: false,
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
       output: {
         type: "string",
         description: "Output format (plaintext or plaintext-openapiv2)",
@@ -49,6 +55,12 @@ export const listApiResourcesSchema = {
       namespaced: {
         type: "boolean",
         description: "If true, only show namespaced resources",
+      },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
       },
       verbs: {
         type: "array",
@@ -80,7 +92,7 @@ const executeKubectlCommand = (command: string, args: string[]): string => {
 };
 
 export async function explainResource(
-  params: ExplainResourceParams
+  params: ExplainResourceParams,
 ): Promise<{ content: { type: string; text: string }[] }> {
   try {
     const command = "kubectl";
@@ -92,6 +104,10 @@ export async function explainResource(
 
     if (params.recursive) {
       args.push("--recursive");
+    }
+
+    if (params.context) {
+      args.push("--context", params.context);
     }
 
     if (params.output) {
@@ -116,7 +132,7 @@ export async function explainResource(
 }
 
 export async function listApiResources(
-  params: ListApiResourcesParams
+  params: ListApiResourcesParams,
 ): Promise<{ content: { type: string; text: string }[] }> {
   try {
     const command = "kubectl";
@@ -136,6 +152,10 @@ export async function listApiResources(
 
     if (params.output) {
       args.push(`-o`, params.output);
+    }
+
+    if (params.context) {
+      args.push("--context", params.context);
     }
 
     const result = executeKubectlCommand(command, args);

@@ -48,6 +48,12 @@ export const kubectlPatchSchema = {
           "If true, only print the object that would be sent, without sending it",
         default: false,
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
     },
     required: ["resourceType", "name"],
   },
@@ -63,6 +69,7 @@ export async function kubectlPatch(
     patchData?: object;
     patchFile?: string;
     dryRun?: boolean;
+    context?: string;
   }
 ) {
   try {
@@ -76,6 +83,7 @@ export async function kubectlPatch(
     const namespace = input.namespace || "default";
     const patchType = input.patchType || "strategic";
     const dryRun = input.dryRun || false;
+    const context = input.context || "";
     let tempFile: string | null = null;
 
     const command = "kubectl";
@@ -110,6 +118,11 @@ export async function kubectlPatch(
     // Add dry-run flag if requested
     if (dryRun) {
       args.push("--dry-run=client");
+    }
+
+    // Add context if provided
+    if (context) {
+      args.push("--context", context);
     }
 
     // Execute the command

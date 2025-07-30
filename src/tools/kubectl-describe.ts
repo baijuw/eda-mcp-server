@@ -25,6 +25,12 @@ export const kubectlDescribeSchema = {
           "Namespace of the resource (optional - defaults to 'default' for namespaced resources)",
         default: "default",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
       allNamespaces: {
         type: "boolean",
         description: "If true, describe resources across all namespaces",
@@ -42,6 +48,7 @@ export async function kubectlDescribe(
     name: string;
     namespace?: string;
     allNamespaces?: boolean;
+    context?: string;
   }
 ) {
   try {
@@ -49,6 +56,7 @@ export async function kubectlDescribe(
     const name = input.name;
     const namespace = input.namespace || "default";
     const allNamespaces = input.allNamespaces || false;
+    const context = input.context || "";
 
     // Build the kubectl command
     const command = "kubectl";
@@ -59,6 +67,10 @@ export async function kubectlDescribe(
       args.push("--all-namespaces");
     } else if (namespace && !isNonNamespacedResource(resourceType)) {
       args.push("-n", namespace);
+    }
+
+    if (context) {
+      args.push("--context", context);
     }
 
     // Execute the command

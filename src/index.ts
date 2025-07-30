@@ -205,6 +205,7 @@ server.setRequestHandler(
             showCurrent?: boolean;
             detailed?: boolean;
             output?: string;
+            context?: string;
           }
         );
       }
@@ -221,6 +222,7 @@ server.setRequestHandler(
             labelSelector?: string;
             fieldSelector?: string;
             sortBy?: string;
+            context?: string;
           }
         );
       }
@@ -233,6 +235,7 @@ server.setRequestHandler(
             name: string;
             namespace?: string;
             allNamespaces?: boolean;
+            context?: string;
           }
         );
       }
@@ -246,6 +249,7 @@ server.setRequestHandler(
             namespace?: string;
             dryRun?: boolean;
             force?: boolean;
+            context?: string;
           }
         );
       }
@@ -263,6 +267,7 @@ server.setRequestHandler(
             allNamespaces?: boolean;
             force?: boolean;
             gracePeriodSeconds?: number;
+            context?: string;
           }
         );
       }
@@ -276,6 +281,7 @@ server.setRequestHandler(
             namespace?: string;
             dryRun?: boolean;
             validate?: boolean;
+            context?: string;
           }
         );
       }
@@ -295,6 +301,7 @@ server.setRequestHandler(
             previous?: boolean;
             follow?: boolean;
             labelSelector?: string;
+            context?: string;
           }
         );
       }
@@ -310,6 +317,7 @@ server.setRequestHandler(
             patchData?: object;
             patchFile?: string;
             dryRun?: boolean;
+            context?: string;
           }
         );
       }
@@ -332,6 +340,7 @@ server.setRequestHandler(
             toRevision?: number;
             timeout?: string;
             watch?: boolean;
+            context?: string;
           }
         );
       }
@@ -348,6 +357,7 @@ server.setRequestHandler(
             outputFormat?: string;
             flags?: Record<string, any>;
             args?: string[];
+            context?: string;
           }
         );
       }
@@ -360,6 +370,7 @@ server.setRequestHandler(
           labelSelector: (input as { labelSelector?: string }).labelSelector,
           sortBy: (input as { sortBy?: string }).sortBy,
           output: (input as { output?: string }).output,
+          context: (input as { context?: string }).context,
         });
       }
 
@@ -386,6 +397,7 @@ server.setRequestHandler(
         case "explain_resource": {
           return await explainResource(
             input as {
+              context?: string;
               resource: string;
               apiVersion?: string;
               recursive?: boolean;
@@ -402,6 +414,7 @@ server.setRequestHandler(
               repo: string;
               namespace: string;
               values?: Record<string, any>;
+              context?: string;
             }
           );
         }
@@ -411,6 +424,7 @@ server.setRequestHandler(
             input as {
               name: string;
               namespace: string;
+              context?: string;
             }
           );
         }
@@ -423,6 +437,7 @@ server.setRequestHandler(
               repo: string;
               namespace: string;
               values?: Record<string, any>;
+              context?: string;
             }
           );
         }
@@ -434,6 +449,7 @@ server.setRequestHandler(
               namespaced?: boolean;
               verbs?: string[];
               output?: "wide" | "name" | "no-headers";
+              context?: string;
             }
           );
         }
@@ -446,6 +462,7 @@ server.setRequestHandler(
               resourceName: string;
               localPort: number;
               targetPort: number;
+              context?: string;
             }
           );
         }
@@ -467,6 +484,7 @@ server.setRequestHandler(
               namespace?: string;
               replicas: number;
               resourceType?: string;
+              context?: string;
             }
           );
         }
@@ -483,6 +501,7 @@ server.setRequestHandler(
               namespace?: string;
               command: string | string[];
               container?: string;
+              context?: string;
             }
           );
         }

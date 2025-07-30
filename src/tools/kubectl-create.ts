@@ -157,6 +157,12 @@ export const kubectlCreateSchema = {
         description:
           'Annotations to apply to the resource (e.g. ["key1=value1", "key2=value2"])',
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
     },
     required: [],
   },
@@ -203,6 +209,7 @@ export async function kubectlCreate(
     annotations?: string[];
     schedule?: string;
     suspend?: boolean;
+    context?: string;
   }
 ) {
   try {
@@ -231,6 +238,7 @@ export async function kubectlCreate(
     const dryRun = input.dryRun || false;
     const validate = input.validate ?? true;
     const output = input.output || "yaml";
+    const context = input.context || "";
 
     const command = "kubectl";
     const args = ["create"];
@@ -422,6 +430,11 @@ export async function kubectlCreate(
 
     // Add output format
     args.push("-o", output);
+
+    // Add context if provided
+    if (context) {
+      args.push("--context", context);
+    }
 
     // Execute the command
     try {

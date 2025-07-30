@@ -57,6 +57,12 @@ export const kubectlDeleteSchema = {
         description:
           "Period of time in seconds given to the resource to terminate gracefully",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
     },
     required: ["resourceType"],
   },
@@ -74,6 +80,7 @@ export async function kubectlDelete(
     allNamespaces?: boolean;
     force?: boolean;
     gracePeriodSeconds?: number;
+    context?: string;
   }
 ) {
   try {
@@ -96,6 +103,7 @@ export async function kubectlDelete(
     const namespace = input.namespace || "default";
     const allNamespaces = input.allNamespaces || false;
     const force = input.force || false;
+    const context = input.context || "";
 
     const command = "kubectl";
     const args = ["delete"];
@@ -142,6 +150,11 @@ export async function kubectlDelete(
     // Add grace period if specified
     if (input.gracePeriodSeconds !== undefined) {
       args.push(`--grace-period=${input.gracePeriodSeconds}`);
+    }
+
+    // Add context if provided
+    if (context) {
+      args.push("--context", context);
     }
 
     // Execute the command

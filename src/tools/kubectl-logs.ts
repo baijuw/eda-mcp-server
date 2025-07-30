@@ -60,6 +60,12 @@ export const kubectlLogsSchema = {
         type: "string",
         description: "Filter resources by label selector",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
     },
     required: ["resourceType", "name"],
   },
@@ -79,12 +85,14 @@ export async function kubectlLogs(
     previous?: boolean;
     follow?: boolean;
     labelSelector?: string;
+    context?: string;
   }
 ) {
   try {
     const resourceType = input.resourceType.toLowerCase();
     const name = input.name;
     const namespace = input.namespace || "default";
+    const context = input.context || "";
 
     const command = "kubectl";
     // Handle different resource types
@@ -99,6 +107,11 @@ export async function kubectlLogs(
 
       // Add options
       args = addLogOptions(args, input);
+
+      // Add context if provided
+      if (context) {
+        args.push("--context", context);
+      }
 
       // Execute the command
       try {
@@ -287,6 +300,10 @@ function addLogOptions(args: string[], input: any): string[] {
 
   if (input.follow) {
     args.push(`--follow`);
+  }
+
+  if (input.context) {
+    args.push("--context", input.context);
   }
 
   return args;

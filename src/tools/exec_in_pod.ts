@@ -51,6 +51,12 @@ export const execInPodSchema = {
         type: "number",
         description: "Timeout for command - 60000 milliseconds if not specified",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
     },
     required: ["name", "command"],
   },
@@ -70,6 +76,7 @@ export async function execInPod(
     container?: string;
     shell?: string;
     timeout?: number;
+    context?: string;
   }
 ): Promise<{ content: { type: string; text: string }[] }> {
   const namespace = input.namespace || "default";
@@ -109,6 +116,11 @@ export async function execInPod(
   });
 
   try {
+    // Set context if provided
+    if (input.context) {
+      k8sManager.setCurrentContext(input.context);
+    }
+
     // Use the Kubernetes client-node Exec API for native exec
     const kc = k8sManager.getKubeConfig();
     const exec = new k8s.Exec(kc);

@@ -47,6 +47,12 @@ export const kubectlGenericSchema = {
         items: { type: "string" },
         description: "Additional command arguments",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
     },
     required: ["command"],
   },
@@ -63,6 +69,7 @@ export async function kubectlGeneric(
     outputFormat?: string;
     flags?: Record<string, any>;
     args?: string[];
+    context?: string;
   }
 ) {
   try {
@@ -111,6 +118,11 @@ export async function kubectlGeneric(
     // Add any additional arguments
     if (input.args && input.args.length > 0) {
       cmdArgs.push(...input.args);
+    }
+
+    // Add context if provided
+    if (input.context) {
+      cmdArgs.push("--context", input.context);
     }
 
     // Execute the command

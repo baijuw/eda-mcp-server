@@ -31,6 +31,12 @@ export const installHelmChartSchema = {
         type: "string",
         description: "Kubernetes namespace",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
       values: {
         type: "object",
         description: "Chart values",
@@ -64,6 +70,12 @@ export const upgradeHelmChartSchema = {
         type: "string",
         description: "Kubernetes namespace",
       },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
+      },
       values: {
         type: "object",
         description: "Chart values",
@@ -88,6 +100,12 @@ export const uninstallHelmChartSchema = {
       namespace: {
         type: "string",
         description: "Kubernetes namespace",
+      },
+      context: {
+        type: "string",
+        description:
+          "Kubeconfig Context to use for the command (optional - defaults to null)",
+        default: "",
       },
     },
     required: ["name", "namespace"],
