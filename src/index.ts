@@ -64,6 +64,7 @@ import {
   workflowResource, 
   workflowResourceSchema 
 } from "./tools/workflow-resource.js";
+import { startStreamableHTTPServer } from "./utils/streamable-http.js";
 
 // Check environment variables for tool filtering
 const allowOnlyReadonlyTools = process.env.ALLOW_ONLY_READONLY_TOOLS === "true";
@@ -514,6 +515,9 @@ server.setRequestHandler(
 if (process.env.ENABLE_UNSAFE_SSE_TRANSPORT) {
   startSSEServer(server);
   console.log(`SSE server started`);
+} else if (process.env.ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT) {
+  startStreamableHTTPServer(server);
+  console.log(`Streamable HTTP server started`);
 } else {
   const transport = new StdioServerTransport();
 
