@@ -9,6 +9,7 @@ import * as k8s from "@kubernetes/client-node";
 import { KubernetesManager } from "../types.js";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { Writable } from "stream";
+import { contextParameter, namespaceParameter } from "../models/common-parameters.js";
 
 /**
  * Schema for exec_in_pod tool.
@@ -27,11 +28,7 @@ export const execInPodSchema = {
         type: "string",
         description: "Name of the pod to execute the command in",
       },
-      namespace: {
-        type: "string",
-        description: "Kubernetes namespace where the pod is located",
-        default: "default",
-      },
+      namespace: namespaceParameter,
       command: {
         anyOf: [
           { type: "string" },
@@ -51,12 +48,7 @@ export const execInPodSchema = {
         type: "number",
         description: "Timeout for command - 60000 milliseconds if not specified",
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
     },
     required: ["name", "command"],
   },

@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter, namespaceParameter, dryRunParameter } from "../models/common-parameters.js";
 
 export const kubectlCreateSchema = {
   name: "kubectl_create",
@@ -14,12 +15,7 @@ export const kubectlCreateSchema = {
     type: "object",
     properties: {
       // General options
-      dryRun: {
-        type: "boolean",
-        description:
-          "If true, only validate the resource, don't actually create it",
-        default: false,
-      },
+      dryRun: dryRunParameter,
       output: {
         type: "string",
         enum: [
@@ -66,11 +62,7 @@ export const kubectlCreateSchema = {
         type: "string",
         description: "Name of the resource to create",
       },
-      namespace: {
-        type: "string",
-        description: "Namespace to create the resource in",
-        default: "default",
-      },
+      namespace: namespaceParameter,
 
       // ConfigMap specific parameters
       fromLiteral: {
@@ -157,12 +149,7 @@ export const kubectlCreateSchema = {
         description:
           'Annotations to apply to the resource (e.g. ["key1=value1", "key2=value2"])',
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
     },
     required: [],
   },

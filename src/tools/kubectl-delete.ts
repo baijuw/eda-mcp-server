@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter, namespaceParameter } from "../models/common-parameters.js";
 
 export const kubectlDeleteSchema = {
   name: "kubectl_delete",
@@ -22,12 +23,7 @@ export const kubectlDeleteSchema = {
         type: "string",
         description: "Name of the resource to delete",
       },
-      namespace: {
-        type: "string",
-        description:
-          "Namespace of the resource (optional - defaults to 'default' for namespaced resources)",
-        default: "default",
-      },
+      namespace: namespaceParameter,
       labelSelector: {
         type: "string",
         description:
@@ -57,12 +53,7 @@ export const kubectlDeleteSchema = {
         description:
           "Period of time in seconds given to the resource to terminate gracefully",
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
     },
     required: ["resourceType"],
   },

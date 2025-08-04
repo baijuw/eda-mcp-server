@@ -2,6 +2,7 @@ import { KubernetesManager } from "../types.js";
 import { execFileSync } from "child_process";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter, namespaceParameter } from "../models/common-parameters.js";
 
 export const kubectlLogsSchema = {
   name: "kubectl_logs",
@@ -19,11 +20,7 @@ export const kubectlLogsSchema = {
         type: "string",
         description: "Name of the resource",
       },
-      namespace: {
-        type: "string",
-        description: "Namespace of the resource",
-        default: "default",
-      },
+      namespace: namespaceParameter,
       container: {
         type: "string",
         description:
@@ -60,12 +57,7 @@ export const kubectlLogsSchema = {
         type: "string",
         description: "Filter resources by label selector",
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
     },
     required: ["resourceType", "name"],
   },

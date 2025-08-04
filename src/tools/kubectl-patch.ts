@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter, dryRunParameter, namespaceParameter } from "../models/common-parameters.js";
 
 export const kubectlPatchSchema = {
   name: "kubectl_patch",
@@ -22,11 +23,7 @@ export const kubectlPatchSchema = {
         type: "string",
         description: "Name of the resource to patch",
       },
-      namespace: {
-        type: "string",
-        description: "Namespace of the resource",
-        default: "default",
-      },
+      namespace: namespaceParameter,
       patchType: {
         type: "string",
         description: "Type of patch to apply",
@@ -42,18 +39,8 @@ export const kubectlPatchSchema = {
         description:
           "Path to a file containing the patch data (alternative to patchData)",
       },
-      dryRun: {
-        type: "boolean",
-        description:
-          "If true, only print the object that would be sent, without sending it",
-        default: false,
-      },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      dryRun: dryRunParameter,
+      context: contextParameter,
     },
     required: ["resourceType", "name"],
   },

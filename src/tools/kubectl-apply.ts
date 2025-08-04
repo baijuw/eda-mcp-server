@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter, namespaceParameter, dryRunParameter } from "../models/common-parameters.js";
 
 export const kubectlApplySchema = {
   name: "kubectl_apply",
@@ -21,28 +22,15 @@ export const kubectlApplySchema = {
         description:
           "Path to a YAML file to apply (optional - use either manifest or filename)",
       },
-      namespace: {
-        type: "string",
-        description: "Namespace to apply the resource to (optional)",
-        default: "default",
-      },
-      dryRun: {
-        type: "boolean",
-        description: "If true, only validate the resource, don't apply it",
-        default: false,
-      },
+      namespace: namespaceParameter,
+      dryRun: dryRunParameter,
       force: {
         type: "boolean",
         description:
           "If true, immediately remove resources from API and bypass graceful deletion",
         default: false,
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
     },
     required: [],
   },

@@ -2,6 +2,8 @@ import { KubernetesManager } from "../types.js";
 import { execFileSync } from "child_process";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import * as yaml from "js-yaml";
+import { contextParameter, namespaceParameter } from "../models/common-parameters.js";
 
 export const kubectlGetSchema = {
   name: "kubectl_get",
@@ -20,12 +22,7 @@ export const kubectlGetSchema = {
         description:
           "Name of the resource (optional - if not provided, lists all resources of the specified type)",
       },
-      namespace: {
-        type: "string",
-        description:
-          "Namespace of the resource (optional - defaults to 'default' for namespaced resources)",
-        default: "default",
-      },
+      namespace: namespaceParameter,
       output: {
         type: "string",
         enum: ["json", "yaml", "wide", "name", "custom"],
@@ -51,12 +48,7 @@ export const kubectlGetSchema = {
         description:
           "Sort events by a field (default: lastTimestamp). Only applicable for events.",
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter
     },
     required: ["resourceType"],
   },

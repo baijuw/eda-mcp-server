@@ -2,6 +2,7 @@ import { KubernetesManager } from "../types.js";
 import { execFileSync } from "child_process";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter, namespaceParameter } from "../models/common-parameters.js";
 
 export const kubectlRolloutSchema = {
   name: "kubectl_rollout",
@@ -26,11 +27,7 @@ export const kubectlRolloutSchema = {
         type: "string",
         description: "Name of the resource",
       },
-      namespace: {
-        type: "string",
-        description: "Namespace of the resource",
-        default: "default",
-      },
+      namespace: namespaceParameter,
       revision: {
         type: "number",
         description: "Revision to rollback to (for undo subcommand)",
@@ -49,12 +46,7 @@ export const kubectlRolloutSchema = {
         description: "Watch the rollout status in real-time until completion",
         default: false,
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
     },
     required: ["subCommand", "resourceType", "name"],
   },

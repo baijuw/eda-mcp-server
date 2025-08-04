@@ -2,6 +2,7 @@ import { KubernetesManager } from "../types.js";
 import { execFileSync } from "child_process";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { namespaceParameter, contextParameter } from "../models/common-parameters.js";
 
 export const kubectlDescribeSchema = {
   name: "kubectl_describe",
@@ -19,18 +20,8 @@ export const kubectlDescribeSchema = {
         type: "string",
         description: "Name of the resource to describe",
       },
-      namespace: {
-        type: "string",
-        description:
-          "Namespace of the resource (optional - defaults to 'default' for namespaced resources)",
-        default: "default",
-      },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      namespace: namespaceParameter,
+      context: contextParameter,
       allNamespaces: {
         type: "boolean",
         description: "If true, describe resources across all namespaces",

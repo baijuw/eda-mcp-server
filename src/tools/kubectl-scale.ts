@@ -2,6 +2,7 @@ import { KubernetesManager } from "../types.js";
 import { execFileSync } from "child_process";
 import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter, namespaceParameter } from "../models/common-parameters.js";
 
 export const kubectlScaleSchema = {
   name: "kubectl_scale",
@@ -13,11 +14,7 @@ export const kubectlScaleSchema = {
         type: "string",
         description: "Name of the deployment to scale",
       },
-      namespace: {
-        type: "string",
-        description: "Namespace of the deployment",
-        default: "default",
-      },
+      namespace: namespaceParameter,
       replicas: {
         type: "number",
         description: "Number of replicas to scale to",
@@ -28,12 +25,7 @@ export const kubectlScaleSchema = {
           "Resource type to scale (deployment, replicaset, statefulset)",
         default: "deployment",
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
     },
     required: ["name", "replicas"],
   },

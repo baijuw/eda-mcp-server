@@ -4,6 +4,7 @@ import {
   ListApiResourcesParams,
 } from "../models/kubectl-models.js";
 import { getSpawnMaxBuffer } from "../config/max-buffer.js";
+import { contextParameter } from "../models/common-parameters.js";
 
 export const explainResourceSchema = {
   name: "explain_resource",
@@ -25,12 +26,7 @@ export const explainResourceSchema = {
         description: "Print the fields of fields recursively",
         default: false,
       },
-      context: {
-        type: "string",
-        description:
-          "Kubeconfig Context to use for the command (optional - defaults to null)",
-        default: "",
-      },
+      context: contextParameter,
       output: {
         type: "string",
         description: "Output format (plaintext or plaintext-openapiv2)",
