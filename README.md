@@ -1,6 +1,6 @@
 # EDA MCP Server Kubernetes
 
-EDA MCP Server forked from [mcp-server-kubernetes](https://github.com/Flux159/mcp-server-kubernetes.git) that can connect to a Kubernetes cluster and manage it. Supports loading kubeconfig from multiple sources in priority order.
+The EDA MCP Server is a fork of [mcp-server-kubernetes](https://github.com/Flux159/mcp-server-kubernetes.git). It extends the Kubernetes cluster manager and adds specific capabilities for Nokia EDA integration.
 
 
 ## Docker Build
