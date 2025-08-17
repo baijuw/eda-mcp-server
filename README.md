@@ -20,7 +20,15 @@ docker build . --build-arg HTTP_PROXY=<proxy server> --build-arg HTTPS_PROXY=<pr
 Run the EDA MCP server in a container:
 
 ```bash
-docker  run --rm -it -p 3001:3001 -e SPAWN_MAX_BUFFER=10485760 -e ENABLE_UNSAFE_SSE_TRANSPORT=1  -e PORT=3001  -e HOST=0.0.0.0 -v ~/.kube/config:/home/appuser/.kube/config eda-mcp-server
+docker run -d --name eda-mcp-server \
+    --restart unless-stopped \
+    -p 3001:3001 \
+    -e SPAWN_MAX_BUFFER=10485760 \
+    -e ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT=1 \
+    -e PORT=3001 \
+    -e HOST=0.0.0.0 \
+    -e KUBECONFIG_YAML="$(cat ~/.kube/config)" \
+    eda-mcp-server
 ```
 
 **Port 3001** is used because the MCP server inside the container listens on port 3001.
