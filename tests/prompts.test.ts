@@ -1,7 +1,7 @@
 import { expect, test, describe, beforeEach, afterEach } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { ListPromptsResultSchema } from "@modelcontextprotocol/sdk/types.js";
+import { ListPromptsResultSchema, GetPromptResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import { asResponseSchema } from "./context-helper";
 
 async function sleep(ms: number): Promise<void> {
@@ -72,5 +72,50 @@ describe("kubernetes prompts", () => {
         },
       ],
     });
+    
+    expect(promptsList.prompts).toContainEqual({
+      name: "load-eda-context",
+      description: "Load comprehensive EDA context by reading all EDA-related resources, analyzing CRDs, and understanding their interdependencies to prime the client for EDA task execution.",
+      arguments: [
+        {
+          name: "namespace",
+          description: "Optional: Specific namespace to focus EDA context loading. If not provided, searches across all namespaces.",
+          required: false,
+        },
+        {
+          name: "include_templates",
+          description: "Optional: Include EDA configuration templates in the context (default: true).",
+          required: false,
+          default: "true",
+        },
+      ],
+    });
+  });
+
+  test("get load-eda-context prompt", async () => {
+    const promptResult = await client.request({
+      method: "prompts/get",
+      params: {
+        name: "load-eda-context",
+        arguments: {
+          namespace: "test-namespace",
+          include_templates: "true"
+        }
+      },
+    }, GetPromptResultSchema);
+
+    expect(promptResult.messages).toBeDefined();
+    expect(promptResult.messages.length).toBe(1);
+    expect(promptResult.messages[0].role).toBe("user");
+    expect(promptResult.messages[0].content.type).toBe("text");
+    
+    const messageText = promptResult.messages[0].content.text;
+    expect(messageText).toContain("Load comprehensive Nokia EDA");
+    expect(messageText).toContain("test-namespace");
+    expect(messageText).toContain("including configuration templates");
+    expect(messageText).toContain("EDA Context Loading Protocol");
+    expect(messageText).toContain("Router"); // EDA resource types
+    expect(messageText).toContain("BridgeDomain");
+    expect(messageText).toContain("IRBInterface");
   });
 }); 
