@@ -27,7 +27,7 @@ docker run -d --name eda-mcp-server \
     -e ENABLE_UNSAFE_STREAMABLE_HTTP_TRANSPORT=1 \
     -e PORT=3001 \
     -e HOST=0.0.0.0 \
-    -e KUBECONFIG_YAML="$(cat ~/.kube/config)" \
+    -e KUBECONFIG="$(cat ~/.kube/config)" \
     eda-mcp-server
 ```
 
