@@ -26,6 +26,8 @@ RUN npm run build
 # Create the final production-ready image
 FROM base AS release
 RUN useradd -m appuser && chown -R appuser /usr/local/app
+# Create .kube directory with correct ownership
+RUN mkdir -p /home/appuser/.kube && chown -R appuser:appuser /home/appuser/.kube
 ENV NODE_ENV=production
 RUN npm install --only=production
 COPY --from=dependencies /usr/local/app/dist ./dist

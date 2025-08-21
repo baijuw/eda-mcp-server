@@ -159,8 +159,21 @@ export class KubernetesManager {
       throw new Error("KUBECONFIG_YAML environment variable is not set");
     }
 
+    // Handle escaped newlines from command line input and flattened YAML
+    let processedYaml = process.env.KUBECONFIG_YAML.replace(/\\n/g, '\n');
+    
+    // If the YAML appears to be on a single line (common with Docker env vars),
+    // try to restore proper YAML formatting by adding newlines after YAML keys
+    if (!processedYaml.includes('\n') && processedYaml.includes('apiVersion:')) {
+      processedYaml = processedYaml
+        .replace(/\s+(apiVersion:|kind:|metadata:|data:|clusters:|contexts:|users:|preferences:|current-context:)/g, '\n$1')
+        .replace(/\s+(cluster:|context:|user:|name:)/g, '\n  $1')
+        .replace(/\s+(certificate-authority-data:|server:|namespace:|client-certificate-data:|client-key-data:)/g, '\n    $1')
+        .trim();
+    }
+
     // Load the config into the JavaScript client
-    this.kc.loadFromString(process.env.KUBECONFIG_YAML);
+    this.kc.loadFromString(processedYaml);
   }
 
   /**
@@ -342,6 +355,19 @@ export class KubernetesManager {
         throw new Error(`Invalid kubeconfigYaml: ${typeof kubeconfigYaml}`);
       }
 
+      // Handle escaped newlines from command line input and flattened YAML
+      let processedYaml = kubeconfigYaml.replace(/\\n/g, '\n');
+      
+      // If the YAML appears to be on a single line (common with Docker env vars),
+      // try to restore proper YAML formatting by adding newlines after YAML keys
+      if (!processedYaml.includes('\n') && processedYaml.includes('apiVersion:')) {
+        processedYaml = processedYaml
+          .replace(/\s+(apiVersion:|kind:|metadata:|data:|clusters:|contexts:|users:|preferences:|current-context:)/g, '\n$1')
+          .replace(/\s+(cluster:|context:|user:|name:)/g, '\n  $1')
+          .replace(/\s+(certificate-authority-data:|server:|namespace:|client-certificate-data:|client-key-data:)/g, '\n    $1')
+          .trim();
+      }
+
       const tempDir = os.tmpdir();
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const randomString = Math.random().toString(36).substring(2);
@@ -351,7 +377,7 @@ export class KubernetesManager {
       );
 
       // Write temporary kubeconfig file
-      fs.writeFileSync(tempKubeconfigPath, kubeconfigYaml, {
+      fs.writeFileSync(tempKubeconfigPath, processedYaml, {
         mode: 0o600,
         encoding: "utf8",
       });
