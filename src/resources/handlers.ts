@@ -796,6 +796,53 @@ status:
 - **Bridge Domain**: Target bridge domain for this VLAN
 - **Interface Selection**: Interfaces to include in this VLAN are selected based on the labels present on the interface resource. Ask the user to provide the label information if it is not already provided.
 
+### Label Creation for VLAN Interface Selection
+
+**Purpose**: Labels associate interfaces with the correct bridge domain. The primary label should uniquely identify the bridge domain to which the interface belongs.
+
+**Recommended Label Strategy**:
+
+**Primary Label (Always Required)**:
+- **Pattern**: \`bridge-domain={bridge-domain-name}\`
+- **Purpose**: Identifies which bridge domain the interface belongs to
+- **Example**: \`bridge-domain=my47bd\`
+
+**Label Strategy by Use Case**:
+
+**Single VLAN per Bridge Domain (Common Case)**:
+\`\`\`bash
+# Bridge Domain: my47bd has only VLAN 47
+# Apply bridge domain label to interface:
+kubectl label interface dc1-leaf1-ethernet-1-1 bridge-domain=my47bd
+
+# VLAN interfaceSelector uses this label:
+interfaceSelector:
+- bridge-domain=my47bd
+\`\`\`
+
+**Multiple VLANs per Bridge Domain (Rare Case)**:
+\`\`\`bash
+# Bridge Domain: shared-bd has multiple VLANs (100, 200, 300)
+# Option 1: Use bridge domain label (selects ALL VLANs in bridge domain)
+interfaceSelector:
+- bridge-domain=shared-bd
+
+# Option 2: Use BridgeInterface resource instead for granular control
+# (Recommended for multi-VLAN scenarios)
+\`\`\`
+
+**Label Application Steps**:
+1. **Identify Bridge Domain**: Determine target bridge domain name
+2. **Apply Label**: \`kubectl label interface {interface-name} bridge-domain={bridge-domain-name}\`
+3. **Verify Label**: \`kubectl get interface {interface-name} -o jsonpath='{.metadata.labels}'\`
+4. **Use in VLAN**: Reference label in interfaceSelector
+
+**Important Notes**:
+- Physical interfaces cannot belong to multiple VLANs
+- Sub-interfaces can belong to different bridge domains with appropriate labels
+- For complex multi-VLAN scenarios, prefer BridgeInterface resource over VLAN resource
+- Always verify labels are applied before creating VLAN resource
+
 ### CRITICAL Configuration Notes:
 ⚠️ **VLAN ID Type**: VLAN ID MUST be specified as a string, not integer
 - ✅ **Correct**: \`vlanID: "47"\`
