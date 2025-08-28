@@ -226,6 +226,33 @@ Creates an EVPN-VXLAN Router (L3 Domain) with BGP configuration for inter-VLAN r
 kubectl apply -f router-config.yaml
 \`\`\`
 
+## Step 2.1: Verify Router Creation Success
+
+**Before concluding success, check the operational status using kubectl get router -o yaml**
+
+\`\`\`bash
+# Immediate operational status check
+kubectl get router <router-name> -o yaml
+\`\`\`
+
+**SUCCESS indicators to look for:**
+- \`status.operationalState: up\`
+- Presence of a populated status section
+- No failed-transaction annotations
+
+**FAILURE indicators to watch for:**
+- Missing status section entirely
+- \`core.eda.nokia.com/failed-transaction\` annotations
+- \`core.eda.nokia.com/running-version: '{}'\` (empty)
+- Any error messages in status
+
+**If failures are found:**
+- Immediately investigate using \`kubectl describe router <router-name>\`
+- Identify root cause before proceeding
+- **Never declare success until operational status is confirmed**
+
+**Note:** Some routers may take 2-3 minutes to become operational. If status shows 'down', wait and check again before troubleshooting.
+
 ### Example Router Configuration:
 \`\`\`yaml
 apiVersion: services.eda.nokia.com/v1alpha1
@@ -376,6 +403,33 @@ Creates EVPN-VXLAN Bridge Domains for Layer 2 connectivity within VLANs. This ob
 # Use kubectl_apply with Bridge Domain manifest
 kubectl apply -f bridge-domain-config.yaml
 \`\`\`
+
+## Step 2.1: Verify Bridge Domain Creation Success
+
+**Before concluding success, check the operational status using kubectl get bridgedomain -o yaml**
+
+\`\`\`bash
+# Immediate operational status check
+kubectl get bridgedomain <bridgedomain-name> -o yaml
+\`\`\`
+
+**SUCCESS indicators to look for:**
+- \`status.operationalState: up\`
+- Presence of a populated status section
+- No failed-transaction annotations
+
+**FAILURE indicators to watch for:**
+- Missing status section entirely
+- \`core.eda.nokia.com/failed-transaction\` annotations
+- \`core.eda.nokia.com/running-version: '{}'\` (empty)
+- Any error messages in status
+
+**If failures are found:**
+- Immediately investigate using \`kubectl describe bridgedomain <bridgedomain-name>\`
+- Identify root cause before proceeding
+- **Never declare success until operational status is confirmed**
+
+**Note:** Some bridge domains may take 2-3 minutes to become operational. If status shows 'down', wait and check again before troubleshooting.
 
 ### Example EVPN Bridge Domain:
 \`\`\`yaml
@@ -573,6 +627,33 @@ kubectl get interface <interface-name> -o yaml | grep -i mtu
 # Use kubectl_apply with IRB manifest
 kubectl apply -f irb-config.yaml
 \`\`\`
+
+## Step 3.1: Verify IRB Interface Creation Success
+
+**Before concluding success, check the operational status using kubectl get irbinterface -o yaml**
+
+\`\`\`bash
+# Immediate operational status check
+kubectl get irbinterface <irb-name> -o yaml
+\`\`\`
+
+**SUCCESS indicators to look for:**
+- \`status.operationalState: up\`
+- Presence of a populated status section
+- No failed-transaction annotations
+
+**FAILURE indicators to watch for:**
+- Missing status section entirely
+- \`core.eda.nokia.com/failed-transaction\` annotations
+- \`core.eda.nokia.com/running-version: '{}'\` (empty)
+- Any error messages in status
+
+**If failures are found:**
+- Immediately investigate using \`kubectl describe irbinterface <irb-name>\`
+- Identify root cause before proceeding
+- **Never declare success until operational status is confirmed**
+
+**Note:** Some IRB interfaces may take 2-3 minutes to become operational. If status shows 'down', wait and check again before troubleshooting.
 
 ### Example IRB Configuration:
 \`\`\`yaml
@@ -874,6 +955,33 @@ interfaceSelector:
 # Use kubectl_apply with VLAN manifest
 kubectl apply -f vlan-config.yaml
 \`\`\`
+
+## Step 3.1: Verify VLAN Creation Success
+
+**Before concluding success, check the operational status using kubectl get vlan -o yaml**
+
+\`\`\`bash
+# Immediate operational status check
+kubectl get vlan <vlan-name> -o yaml
+\`\`\`
+
+**SUCCESS indicators to look for:**
+- \`status.operationalState: up\`
+- Presence of a populated status section
+- No failed-transaction annotations
+
+**FAILURE indicators to watch for:**
+- Missing status section entirely
+- \`core.eda.nokia.com/failed-transaction\` annotations
+- \`core.eda.nokia.com/running-version: '{}'\` (empty)
+- Any error messages in status
+
+**If failures are found:**
+- Immediately investigate using \`kubectl describe vlan <vlan-name>\`
+- Identify root cause before proceeding
+- **Never declare success until operational status is confirmed**
+
+**Note:** Some VLANs may take 2-3 minutes to become operational. If status shows 'down', wait and check again before troubleshooting.
 
 ### Example VLAN Configuration:
 \`\`\`yaml
@@ -1419,6 +1527,33 @@ kubectl get interface dc1-leaf3-ethernet-1-1 -o jsonpath='{.metadata.labels}'
 # Use kubectl_apply with VirtualNetwork manifest
 kubectl apply -f virtualnetwork-config.yaml
 \`\`\`
+
+## Step 3.1: Verify VirtualNetwork Creation Success
+
+**Before concluding success, check the operational status using kubectl get virtualnetwork -o yaml**
+
+\`\`\`bash
+# Immediate operational status check
+kubectl get virtualnetwork <virtualnetwork-name> -o yaml
+\`\`\`
+
+**SUCCESS indicators to look for:**
+- \`status.operationalState: up\`
+- Presence of a populated status section
+- No failed-transaction annotations
+
+**FAILURE indicators to watch for:**
+- Missing status section entirely
+- \`core.eda.nokia.com/failed-transaction\` annotations
+- \`core.eda.nokia.com/running-version: '{}'\` (empty)
+- Any error messages in status
+
+**If failures are found:**
+- Immediately investigate using \`kubectl describe virtualnetwork <virtualnetwork-name>\`
+- Identify root cause before proceeding
+- **Never declare success until operational status is confirmed**
+
+**Note:** Some VirtualNetworks may take 2-3 minutes to become operational. If status shows 'down', wait and check again before troubleshooting.
 
 ### Example VirtualNetwork Configuration:
 
@@ -2874,12 +3009,32 @@ kubectl get router <router-name> -o jsonpath='{.status.irbInterfaces}'
 ### Immediate Post-Creation Workflow:
 
 \`\`\`bash
-# Never declare success without running this pattern:
-# 1. kubectl get <resource-type> <name> -o jsonpath='{.status.operationalState}'
-# 2. Compare with working examples of same resource type  
-# 3. Look for "smoking gun" indicators specific to resource type
-# 4. Cross-reference: Does parent resource list this child resource?
-# 5. If broken, ask: "What creates the missing connection?"
+# Never declare success without running this systematic health check pattern:
+
+# 1. Check operational status using kubectl get <resource> -o yaml
+kubectl get <resource-type> <name> -o yaml
+
+# 2. Look for SUCCESS indicators:
+# - status.operationalState: up
+# - Presence of a populated status section  
+# - No failed-transaction annotations
+
+# 3. Look for FAILURE indicators:
+# - Missing status section entirely
+# - core.eda.nokia.com/failed-transaction annotations
+# - core.eda.nokia.com/running-version: '{}' (empty)
+# - Any error messages in status
+
+# 4. If failures are found:
+# - Immediately investigate using kubectl describe <resource-type> <name>
+# - Identify root cause before proceeding
+# - Never declare success until operational status is confirmed
+
+# 5. Apply the systematic troubleshooting workflow:
+# - Compare with working examples of same resource type  
+# - Look for "smoking gun" indicators specific to resource type
+# - Cross-reference: Does parent resource list this child resource?
+# - If broken, ask: "What creates the missing connection?"
 \`\`\`
 
 ### Resource Relationship Memory Map:
