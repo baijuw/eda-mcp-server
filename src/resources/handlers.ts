@@ -1084,7 +1084,9 @@ spec:
   bridgeDomain: my47bd
   vlanID: "47"                           # MUST be string, not integer
   interfaceSelector:                     # Simple array of interface names
-  - dc1-leaf1-ethernet-1-1
+  - vlangroup47: "true"                  # Pick a label that groups all interfaces for VLAN 47
+                                          # Example: in the Interface resource, look under metadata.labels
+                                          # (e.g., vlangroup47: "true") and use that here
 ---
 # Bridge Interface for VLAN 47
 apiVersion: services.eda.nokia.com/v1alpha1
@@ -1111,7 +1113,9 @@ spec:
   bridgeDomain: my48bd
   vlanID: "48"                           # MUST be string, not integer
   interfaceSelector:                     # Simple array of interface names
-  - dc1-leaf3-ethernet-1-1
+  - vlangroup48: "true"                  # Pick a label that groups all interfaces for VLAN 48
+                                         # Example: in the Interface resource, look under metadata.labels
+                                         # (e.g., vlangroup48: "true") and use that here
 ---
 # Bridge Interface for VLAN 48
 apiVersion: services.eda.nokia.com/v1alpha1
@@ -1346,14 +1350,15 @@ Understanding the relationships and dependencies between Nokia EDA custom resour
    │
 2. Layer 2 Infrastructure  
    ├── Bridge Domains (L2 domains)
-   ├── Interface Association (choose one method):
-   │   ├── VLANs (VLAN to Bridge Domain mapping with label selectors)
+   ├── Interface Association (must use one method only — options are mutually exclusive):
+   │   ├── VLANs (VLAN to Bridge Domain mapping with label selectors from the interface resource)
    │   └── Bridge Interfaces (Direct Interface to Bridge Domain attachment)
    └── IRB Interfaces (optional: connect Bridge Domain to Layer 3 Router)
    │
 3. Layer 3 Infrastructure
    ├── Routers (L3 domains with BGP)
    └── IRB Interfaces (L2-L3 bridge via Router and Bridge Domain)
+   │   ├── Bridge Domain must already be present with this IRB attached to it
    │
 4. Client Configuration
    └── Client interfaces and routing
@@ -1368,11 +1373,13 @@ Interface:
   operationalState: up
     ↓
 VLAN:
-  interfaceSelector: [interface]  # References Interface(s)
+  interfaceSelector: [vlangroup=30]  # References the label used on the intended Interface(s)
   bridgeDomain: bridge-domain     # References Bridge Domain
+  vlanID: "30"                    # VLAN tag
+  operationalState: up
     ↓
 Bridge Interface:
-  interface: interface            # References Interface
+  interface: [interface]            # References Interface
   bridgeDomain: bridge-domain     # References Bridge Domain
   vlanID: "47"                    # VLAN tag
     ↓
@@ -1412,8 +1419,8 @@ Router:
 
 ### VLAN Dependencies:
 - **Bridge Domain**: Must exist and be operational
-- **Interface Selector**: Interfaces must exist with \`dot1q\` encapsulation
-- **VLAN ID uniqueness**: Per interface, VLAN IDs must be unique
+- **Interface Selector**: Interfaces must exist with \`dot1q\` encapsulation and an associated label. VLAN method only uses the label present on the interface and not the interface name
+- **VLAN ID uniqueness**: Per interface, VLAN IDs must be unique, use from pools if no VLAN ID is provided
 
 ### Bridge Interface Dependencies:
 - **Interface**: Must exist and be operational
@@ -1438,9 +1445,16 @@ Router:
 3. Create **Router**
 
 ### Phase 2: Layer 2 Connectivity (Sequential)
-1. Create **VLANs** (references Bridge Domains and Interfaces)
-2. Create **Bridge Interfaces** (attaches Interfaces to Bridge Domains)
-3. Verify Bridge Domain has active subInterfaces
+1. Create **VLANs**  
+   - References **Bridge Domains** using **labels** on the Interface resource  
+   - Never use interface names directly  
+   - Labels (e.g., \`vlangroup61: 'true'\`) allow grouping multiple interfaces into one VLAN resource  
+2. Create **Bridge Interfaces**  
+   - Attaches specific **Interfaces** directly to **Bridge Domains**  
+   - Uses the explicit **interface name** (e.g., \`dc1-leaf1-ethernet-1-1\`)  
+3. Verify **Bridge Domain**  
+   - Ensure it has active \`subInterfaces\` with \`operationalState: up\`  
+
 
 ### Phase 3: Layer 3 Integration (Sequential)
 1. Create **IRB Interfaces** (bridges Bridge Domains to Router)
@@ -1450,7 +1464,8 @@ Router:
 ### Phase 4: Client Configuration
 1. Configure client VLAN interfaces
 2. Set client IP addresses
-3. Configure routing via IRB gateways
+3. Check if there are conflicting routes on the clients and delete them if needed
+4. Configure routing via IRB gateways
 
 ## Advanced Resource Relationship Discovery
 
