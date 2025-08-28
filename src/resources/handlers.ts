@@ -67,6 +67,12 @@ export const getResourceHandlers = (k8sManager: KubernetesManager) => ({
           description: "End-to-end workflow for setting up inter-VLAN routing with EVPN",
           mimeType: "text/markdown"
         },
+        {
+          uri: "k8s://workflows/virtualnetwork-creation",
+          name: "VirtualNetwork Complete Setup Workflow",
+          description: "End-to-end workflow for creating VirtualNetwork resources with integrated L2/L3 domains",
+          mimeType: "text/markdown"
+        },
         
         // Dependencies and Relationships
         {
@@ -93,6 +99,12 @@ export const getResourceHandlers = (k8sManager: KubernetesManager) => ({
           uri: "k8s://templates/irb-interface",
           name: "IRB Interface Template",
           description: "IRB interface configuration template with anycast gateway",
+          mimeType: "text/yaml"
+        },
+        {
+          uri: "k8s://templates/virtualnetwork-multi-vlan",
+          name: "VirtualNetwork Multi-VLAN Template",
+          description: "Complete VirtualNetwork template for multi-VLAN L2/L3 network setup",
           mimeType: "text/yaml"
         },
         
@@ -1334,6 +1346,417 @@ This workflow provides complete inter-VLAN routing using EVPN-VXLAN overlay with
         };
       }
 
+      // VirtualNetwork Creation Workflow
+      if (uri === "k8s://workflows/virtualnetwork-creation") {
+        const workflow = `
+# VirtualNetwork Creation Workflow
+
+## Overview
+VirtualNetwork is a composite resource that automatically manages Bridge Domains, VLANs, Routers, and IRB Interfaces as a single unit for simplified L2/L3 network deployment. This eliminates the need to create individual resources manually and provides unified management.
+
+## Prerequisites
+- Nokia EDA fabric operational
+- Required pools configured (evi-pool, vni-pool, tunnel-index-pool)  
+- Physical interfaces exist with proper labels for selection
+- IP addressing plan for IRB gateways
+- BGP autonomous system planning
+
+## Step 1: Interface Label Preparation
+
+VirtualNetwork VLANs use label selectors to choose interfaces. Prepare interfaces with appropriate labels:
+
+\`\`\`bash
+# Apply labels to interfaces for VLAN selection
+# Example: Label interfaces for bridge domain 301
+kubectl label interface dc1-leaf1-ethernet-1-1 bridge-domain-301=true
+
+# Example: Label interfaces for bridge domain 302  
+kubectl label interface dc1-leaf3-ethernet-1-1 bridge-domain-302=true
+
+# Verify labels are applied
+kubectl get interface dc1-leaf1-ethernet-1-1 -o jsonpath='{.metadata.labels}'
+kubectl get interface dc1-leaf3-ethernet-1-1 -o jsonpath='{.metadata.labels}'
+\`\`\`
+
+### Label Strategy Best Practices:
+- **Descriptive Labels**: Use meaningful names like \`bridge-domain-301=true\`
+- **Consistent Naming**: Follow patterns that match bridge domain names
+- **Unique Grouping**: Each VLAN should have distinct label selectors
+- **Documentation**: Keep track of label-to-bridge-domain mappings
+
+## Step 2: Plan VirtualNetwork Configuration
+
+### Required Decisions:
+
+#### Overall Architecture:
+- **VirtualNetwork Name**: Descriptive name (e.g., \`autol3\`, \`multi-vlan-network\`)
+- **Namespace**: Target Kubernetes namespace (e.g., \`clab-clabmcp\`)
+- **Number of VLANs**: How many separate L2 domains needed
+
+#### Per Bridge Domain Planning:
+- **Bridge Domain Names**: One per VLAN (e.g., \`bd301\`, \`bd302\`)
+- **Bridge Domain Type**: EVPNVXLAN recommended for multi-node overlay
+- **MAC Aging**: Timeout for MAC address learning (default: 300 seconds)
+
+#### Per VLAN Planning:
+- **VLAN Names**: Descriptive names (e.g., \`vlan301-leaf1\`, \`vlan302-leaf3\`)
+- **VLAN IDs**: Unique identifiers as strings (e.g., \`"301"\`, \`"302"\`)
+- **Interface Selectors**: Label selectors to choose interfaces (e.g., \`bridge-domain-301=true\`)
+
+#### Router Configuration:
+- **Router Name**: L3 domain name (same as VirtualNetwork name)
+- **BGP AS Number**: Unique autonomous system (e.g., 65003)
+- **BGP Settings**: Use standard EVPN configuration
+
+#### IRB Interface Planning:
+- **IRB Names**: One per bridge domain (e.g., \`irb-bd301\`, \`irb-bd302\`)
+- **Gateway IPs**: Anycast gateway addresses (e.g., \`192.168.30.1/24\`, \`192.168.32.1/24\`)
+- **IP MTU**: Default 1400 (must be smaller than bridge domain MTU)
+
+## Step 3: Create VirtualNetwork Resource
+
+\`\`\`bash
+# Use kubectl_apply with VirtualNetwork manifest
+kubectl apply -f virtualnetwork-config.yaml
+\`\`\`
+
+### Example VirtualNetwork Configuration:
+
+Based on the provided example, here's a complete multi-VLAN VirtualNetwork:
+
+\`\`\`yaml
+apiVersion: services.eda.nokia.com/v1alpha1
+kind: VirtualNetwork
+metadata:
+  name: autol3
+  namespace: clab-clabmcp
+spec:
+  # Bridge Domains - One per VLAN/L2 segment
+  bridgeDomains:
+  - name: bd301
+    spec:
+      description: "Bridge domain 301 for leaf1 connectivity"
+      type: EVPNVXLAN
+      eviPool: evi-pool
+      tunnelIndexPool: tunnel-index-pool
+      vniPool: vni-pool
+      macAging: 300
+  - name: bd302
+    spec:
+      description: "Bridge domain 302 for leaf3 connectivity"
+      type: EVPNVXLAN
+      eviPool: evi-pool
+      tunnelIndexPool: tunnel-index-pool
+      vniPool: vni-pool
+      macAging: 300
+  
+  # VLANs - Connect interfaces to bridge domains via label selectors
+  vlans:
+  - name: vlan301-leaf1
+    spec:
+      bridgeDomain: bd301
+      vlanID: "301"                           # MUST be string
+      description: "VLAN 301 for bridge domain bd301"
+      interfaceSelector:
+      - bridge-domain-301=true                # Label selector for interfaces
+  - name: vlan302-leaf3
+    spec:
+      bridgeDomain: bd302
+      vlanID: "302"                           # MUST be string
+      description: "VLAN 302 for bridge domain bd302"
+      interfaceSelector:
+      - bridge-domain-302=true                # Label selector for interfaces
+  
+  # Router - L3 domain with BGP for inter-VLAN routing
+  routers:
+  - name: autol3                              # Same as VirtualNetwork name
+    spec:
+      description: "Auto L3 router for inter-VLAN routing"
+      type: EVPNVXLAN
+      eviPool: evi-pool
+      tunnelIndexPool: tunnel-index-pool
+      vniPool: vni-pool
+      bgp:
+        autonomousSystem: 65003               # Unique BGP AS
+        enabled: true
+        ebgpPreference: 170
+        ibgpPreference: 170
+        ipv4Unicast:
+          enabled: true
+          multipath:
+            allowMultipleAS: false
+            maxAllowedPaths: 4
+        minWaitToAdvertise: 0
+        rapidWithdrawl: true
+        waitForFIBInstall: false
+  
+  # IRB Interfaces - L2-L3 bridging with anycast gateways
+  irbInterfaces:
+  - name: irb-bd301
+    spec:
+      bridgeDomain: bd301                     # References bridge domain
+      router: autol3                          # References router
+      description: "IRB interface for bridge domain bd301"
+      arpTimeout: 14400
+      ipMTU: 1400
+      learnUnsolicited: NONE
+      ipAddresses:
+      - ipv4Address:
+          ipPrefix: 192.168.30.1/24           # Anycast gateway IP
+          primary: true
+  - name: irb-bd302
+    spec:
+      bridgeDomain: bd302                     # References bridge domain  
+      router: autol3                          # References router
+      description: "IRB interface for bridge domain bd302"
+      arpTimeout: 14400
+      ipMTU: 1400
+      learnUnsolicited: NONE
+      ipAddresses:
+      - ipv4Address:
+          ipPrefix: 192.168.32.1/24           # Anycast gateway IP
+          primary: true
+\`\`\`
+
+## Step 4: Systematic VirtualNetwork Status Verification
+
+### Immediate Post-Creation Status Check:
+
+\`\`\`bash
+# 1. Check overall VirtualNetwork status
+kubectl get virtualnetwork autol3 -o yaml
+
+# Key status indicators to verify:
+kubectl get virtualnetwork autol3 -o jsonpath='Overall State: {.status.operationalState}'
+echo ""
+kubectl get virtualnetwork autol3 -o jsonpath='Nodes: {.status.nodes}'
+echo ""  
+kubectl get virtualnetwork autol3 -o jsonpath='IRB Interfaces: {.status.numIRBInterfaces}'
+echo ""
+kubectl get virtualnetwork autol3 -o jsonpath='Sub Interfaces: {.status.numSubInterfaces}'
+\`\`\`
+
+### Success Indicators Analysis:
+
+✅ **VirtualNetwork Level**:
+- \`operationalState: up\`
+- \`numNodes: 2\` (fabric nodes where deployed)
+- \`numIRBInterfaces: 2\` (number of L2-L3 bridges)
+- \`numSubInterfaces: 2\` (number of VLAN interfaces)
+- \`numIRBInterfacesOperDown: 0\` (all IRBs operational)
+- \`numSubInterfacesOperDown: 0\` (all VLANs operational)
+
+### Comprehensive Component Status Validation:
+
+\`\`\`bash
+# 2. Verify individual auto-created resources exist and are operational
+echo "=== AUTO-CREATED RESOURCE VERIFICATION ==="
+
+# Check Bridge Domains
+echo "Bridge Domains:"
+kubectl get bridgedomain bd301 bd302 -o custom-columns=NAME:.metadata.name,STATE:.status.operationalState,INTERFACES:.status.numSubInterfaces
+
+# Check VLANs  
+echo ""
+echo "VLANs:"
+kubectl get vlan vlan301-leaf1 vlan302-leaf3 -o custom-columns=NAME:.metadata.name,VLAN_ID:.spec.vlanID,BRIDGE_DOMAIN:.spec.bridgeDomain
+
+# Check Router
+echo ""
+echo "Router:"
+kubectl get router autol3 -o custom-columns=NAME:.metadata.name,STATE:.status.operationalState,NODES:.status.numNodes,IRBS:.status.irbInterfaces
+
+# Check IRB Interfaces
+echo ""  
+echo "IRB Interfaces:"
+kubectl get irbinterface irb-bd301 irb-bd302 -o custom-columns=NAME:.metadata.name,STATE:.status.operationalState,ROUTER:.spec.router,BRIDGE_DOMAIN:.spec.bridgeDomain
+\`\`\`
+
+### Cross-Reference Validation Pattern:
+
+\`\`\`bash
+# 3. Validate resource relationships and cross-references
+echo "=== CROSS-REFERENCE VALIDATION ==="
+
+# Verify router lists IRB interfaces
+echo "Router IRB listing:"
+kubectl get router autol3 -o jsonpath='Router autol3 IRBs: {.status.irbInterfaces}'
+echo ""
+
+# Verify bridge domains show attached interfaces
+echo "Bridge Domain interface counts:"
+kubectl get bridgedomain bd301 -o jsonpath='bd301 interfaces: {.status.numSubInterfaces}'
+echo ""
+kubectl get bridgedomain bd302 -o jsonpath='bd302 interfaces: {.status.numSubInterfaces}'
+echo ""
+
+# Check for VirtualNetwork label on resources
+echo "VirtualNetwork labeling:"
+kubectl get router autol3 -o jsonpath='Router labels: {.metadata.labels}'
+echo ""
+kubectl get bridgedomain bd301 -o jsonpath='bd301 labels: {.metadata.labels}'
+\`\`\`
+
+## Step 5: Test Inter-VLAN Connectivity
+
+### Client Configuration:
+
+Before testing, ensure client devices are properly configured:
+
+\`\`\`bash
+# Client in VLAN 301
+ip link add link eth1 name eth1.301 type vlan id 301
+ip addr add 192.168.30.10/24 dev eth1.301
+ip link set eth1.301 up
+ip route add 192.168.32.0/24 via 192.168.30.1 dev eth1.301
+
+# Client in VLAN 302  
+ip link add link eth1 name eth1.302 type vlan id 302
+ip addr add 192.168.32.20/24 dev eth1.302
+ip link set eth1.302 up
+ip route add 192.168.30.0/24 via 192.168.32.1 dev eth1.302
+\`\`\`
+
+### Connectivity Test Pattern:
+
+\`\`\`bash
+# Test 1: Gateway reachability (Layer 3)
+echo "=== GATEWAY REACHABILITY TEST ==="
+ping -c 3 192.168.30.1    # From VLAN 301 client
+ping -c 3 192.168.32.1    # From VLAN 302 client
+
+# Test 2: Inter-VLAN communication  
+echo "=== INTER-VLAN ROUTING TEST ==="
+ping -c 3 192.168.32.20   # From VLAN 301 to VLAN 302
+ping -c 3 192.168.30.10   # From VLAN 302 to VLAN 301
+
+# Test 3: Large packet MTU validation
+echo "=== MTU VALIDATION TEST ==="
+ping -s 1400 -c 3 192.168.32.20   # Test large packets
+\`\`\`
+
+## Step 6: Resource Management Understanding
+
+### Automatic Resource Creation:
+- VirtualNetwork creates individual Bridge Domain, VLAN, Router, and IRB Interface resources
+- All child resources are labeled with \`services.eda.nokia.com/virtualnetwork=<name>\`
+- Child resources follow VirtualNetwork naming patterns
+
+### Resource Lifecycle:
+- **Create**: Single VirtualNetwork YAML creates all components
+- **Update**: Modify VirtualNetwork spec to update child resources
+- **Delete**: Deleting VirtualNetwork removes all child resources
+- **Status**: VirtualNetwork status aggregates child resource status
+
+### Best Practices:
+- **Avoid Manual Creation**: Don't create individual Bridge Domain/VLAN/Router/IRB resources separately
+- **Use VirtualNetwork Management**: All changes should go through VirtualNetwork resource
+- **Monitor Composite Status**: Check VirtualNetwork status for overall health
+- **Label Awareness**: Understand that child resources are auto-labeled
+
+## Common Issues & Troubleshooting
+
+### Issue: VirtualNetwork operationalState Down
+
+**Systematic Diagnosis:**
+\`\`\`bash
+# 1. Check overall status first
+kubectl get virtualnetwork autol3 -o yaml | grep -A 10 status
+
+# 2. Check individual component status
+kubectl get bridgedomain bd301 bd302 -o custom-columns=NAME:.metadata.name,STATE:.status.operationalState
+kubectl get router autol3 -o custom-columns=NAME:.metadata.name,STATE:.status.operationalState
+kubectl get irbinterface irb-bd301 irb-bd302 -o custom-columns=NAME:.metadata.name,STATE:.status.operationalState
+
+# 3. Compare with working VirtualNetwork
+kubectl get virtualnetwork --all-namespaces -o custom-columns=NAME:.metadata.name,STATE:.status.operationalState,IRBS:.status.numIRBInterfaces
+\`\`\`
+
+**Common Causes:**
+- **Interface Labels Missing**: VLAN selectors can't find labeled interfaces
+- **Pool Exhaustion**: EVI/VNI pools don't have available capacity
+- **Reference Errors**: Internal resource references are incorrect
+- **BGP Configuration**: Router BGP settings are invalid
+
+### Issue: Interface Selection Problems
+
+**Diagnosis:**
+\`\`\`bash
+# Check if interfaces have required labels
+kubectl get interface dc1-leaf1-ethernet-1-1 -o jsonpath='{.metadata.labels}'
+kubectl get interface dc1-leaf3-ethernet-1-1 -o jsonpath='{.metadata.labels}'
+
+# Check VLAN selector matching
+kubectl describe vlan vlan301-leaf1
+kubectl describe vlan vlan302-leaf3
+\`\`\`
+
+**Resolution:**
+- Apply missing labels to interfaces
+- Verify label selectors match interface labels exactly
+- Check interface \`operationalState: up\` and \`encapType: dot1q\`
+
+### Issue: Inter-VLAN Routing Fails
+
+**Diagnosis Pattern:**
+\`\`\`bash
+# 1. Verify IRB interfaces are operational
+kubectl get irbinterface irb-bd301 irb-bd302 -o jsonpath='{range .items[*]}{.metadata.name}: {.status.operationalState}{"\n"}{end}'
+
+# 2. Check router lists IRB interfaces
+kubectl get router autol3 -o jsonpath='{.status.irbInterfaces}'
+
+# 3. Verify gateway IPs are configured
+kubectl get irbinterface irb-bd301 -o jsonpath='{.spec.ipAddresses[0].ipv4Address.ipPrefix}'
+kubectl get irbinterface irb-bd302 -o jsonpath='{.spec.ipAddresses[0].ipv4Address.ipPrefix}'
+\`\`\`
+
+**Resolution:**
+- Fix IRB interface operational issues  
+- Verify client routing configuration
+- Check anycast gateway IP assignments
+- Test L2 connectivity first (same-VLAN ping)
+
+### Issue: Resource Creation Failures
+
+**Common YAML Validation Errors:**
+- **VLAN ID Type**: Must be string (\`"301"\`) not integer (\`301\`)
+- **Resource References**: Bridge domain/router names must match exactly
+- **Interface Selectors**: Must use array format, not matchLabels structure
+- **IP Address Format**: Use correct CIDR notation
+
+## VirtualNetwork vs Individual Resources
+
+### When to Use VirtualNetwork:
+✅ **Multi-VLAN environments** with inter-VLAN routing
+✅ **Simplified management** of L2/L3 domains
+✅ **Consistent configuration** across VLANs
+✅ **Rapid deployment** of complete network segments
+
+### When to Use Individual Resources:
+✅ **Single VLAN** simple deployments
+✅ **Complex topologies** requiring granular control
+✅ **Existing deployments** with established individual resources
+✅ **Custom resource relationships** not supported by VirtualNetwork
+
+## Next Steps
+
+After successful VirtualNetwork deployment:
+
+1. **Client Configuration**: Set up VLAN interfaces and routing on end devices
+2. **Monitoring**: Monitor VirtualNetwork status and child resource health  
+3. **Scaling**: Add additional VLANs by updating VirtualNetwork spec
+4. **Performance Tuning**: Optimize BGP and MAC learning parameters
+5. **Documentation**: Maintain mapping of labels, VLANs, and IP assignments
+
+VirtualNetwork provides a powerful abstraction for managing complex L2/L3 network topologies with simplified operations and consistent configuration patterns.
+        `;
+        
+        return {
+          contents: [{ uri, mimeType: "text/markdown", text: workflow }]
+        };
+      }
+
       // Resource Dependencies Guide
       if (uri === "k8s://dependencies/eda-resource-hierarchy") {
         const dependencies = `
@@ -1344,6 +1767,7 @@ Understanding the relationships and dependencies between Nokia EDA custom resour
 
 ## Resource Hierarchy (Creation Order)
 
+### Option A: Individual Resources (Traditional Approach)
 \`\`\`
 1. Physical Infrastructure
    ├── Interfaces (physical ports with encapsulation)
@@ -1363,6 +1787,29 @@ Understanding the relationships and dependencies between Nokia EDA custom resour
 4. Client Configuration
    └── Client interfaces and routing
 \`\`\`
+
+### Option B: VirtualNetwork (Composite Resource Approach)
+\`\`\`
+1. Physical Infrastructure
+   ├── Interfaces (with proper labels for selection)
+   │
+2. VirtualNetwork Composite Resource
+   ├── Automatically creates Bridge Domains (multiple L2 domains)
+   ├── Automatically creates VLANs (with interface label selectors)
+   ├── Automatically creates Router (single L3 domain for inter-VLAN routing)
+   ├── Automatically creates IRB Interfaces (L2-L3 bridges)
+   └── Configures BGP for route advertisement
+   │
+3. Client Configuration
+   └── Client interfaces and routing
+\`\`\`
+
+**VirtualNetwork Benefits:**
+- **Single resource creation**: Creates entire multi-VLAN L2/L3 network stack
+- **Consistent configuration**: Ensures proper resource relationships and dependencies
+- **Template-based deployment**: Standardized multi-VLAN network patterns
+- **Integrated routing**: Automatic inter-VLAN routing with BGP
+- **Simplified troubleshooting**: Single resource to check for network issues
 
 ## Resource Relationships
 
@@ -1436,6 +1883,13 @@ Router:
 - **Bridge Domain**: Must exist and be operational (EVPNVXLAN type)
 - **Router**: Must exist and be operational
 - **IP Planning**: Gateway IPs must not conflict with client assignments
+
+### VirtualNetwork Dependencies (Composite Resource):
+- **Interfaces**: Must exist with proper labels applied for VLAN selection
+- **Pools**: evi-pool, vni-pool, tunnel-index-pool must exist and have capacity
+- **No Dependencies**: VirtualNetwork creates all child resources automatically
+- **Label Strategy**: All VLANs use label selectors to choose interfaces
+- **Resource Management**: Automatically creates Bridge Domains, VLANs, Router, and IRB Interfaces
 
 ## Creation Sequence Best Practices
 
@@ -1783,6 +2237,194 @@ spec:
 # - ipv4Address:
 #     ipPrefix: 192.168.47.254/24
 #     primary: false
+        `;
+        
+        return {
+          contents: [{ uri, mimeType: "text/yaml", text: template }]
+        };
+      }
+
+      // VirtualNetwork Multi-VLAN Template
+      if (uri === "k8s://templates/virtualnetwork-multi-vlan") {
+        const template = `
+# VirtualNetwork Multi-VLAN Template
+
+apiVersion: services.eda.nokia.com/v1alpha1
+kind: VirtualNetwork
+metadata:
+  name: {{ virtualnetwork-name }}
+  namespace: {{ namespace }}
+spec:
+  # Bridge Domains - One per VLAN/L2 segment
+  bridgeDomains:
+  - name: {{ bridge-domain-1-name }}
+    spec:
+      description: "{{ bridge-domain-1-description }}"
+      type: EVPNVXLAN
+      eviPool: evi-pool
+      tunnelIndexPool: tunnel-index-pool
+      vniPool: vni-pool
+      macAging: {{ mac-aging-timeout }}
+  - name: {{ bridge-domain-2-name }}
+    spec:
+      description: "{{ bridge-domain-2-description }}"
+      type: EVPNVXLAN
+      eviPool: evi-pool
+      tunnelIndexPool: tunnel-index-pool
+      vniPool: vni-pool
+      macAging: {{ mac-aging-timeout }}
+
+  # VLANs - Connect interfaces to bridge domains via label selectors
+  vlans:
+  - name: {{ vlan-1-name }}
+    spec:
+      bridgeDomain: {{ bridge-domain-1-name }}
+      vlanID: "{{ vlan-1-id }}"                     # MUST be string
+      description: "{{ vlan-1-description }}"
+      interfaceSelector:
+      - {{ interface-label-1 }}                    # Label selector for interfaces
+  - name: {{ vlan-2-name }}
+    spec:
+      bridgeDomain: {{ bridge-domain-2-name }}
+      vlanID: "{{ vlan-2-id }}"                     # MUST be string
+      description: "{{ vlan-2-description }}"
+      interfaceSelector:
+      - {{ interface-label-2 }}                    # Label selector for interfaces
+
+  # Router - L3 domain with BGP for inter-VLAN routing
+  routers:
+  - name: {{ router-name }}                         # Same as VirtualNetwork name
+    spec:
+      description: "{{ router-description }}"
+      type: EVPNVXLAN
+      eviPool: evi-pool
+      tunnelIndexPool: tunnel-index-pool
+      vniPool: vni-pool
+      bgp:
+        autonomousSystem: {{ bgp-as-number }}       # Unique BGP AS
+        enabled: true
+        ebgpPreference: 170
+        ibgpPreference: 170
+        ipv4Unicast:
+          enabled: true
+          multipath:
+            allowMultipleAS: false
+            maxAllowedPaths: 4
+        minWaitToAdvertise: 0
+        rapidWithdrawl: true
+        waitForFIBInstall: false
+
+  # IRB Interfaces - L2-L3 bridging with anycast gateways
+  irbInterfaces:
+  - name: {{ irb-1-name }}
+    spec:
+      bridgeDomain: {{ bridge-domain-1-name }}      # References bridge domain
+      router: {{ router-name }}                     # References router
+      description: "{{ irb-1-description }}"
+      arpTimeout: 14400
+      ipMTU: 1400
+      learnUnsolicited: NONE
+      ipAddresses:
+      - ipv4Address:
+          ipPrefix: {{ gateway-1-ip-with-cidr }}    # Anycast gateway IP
+          primary: true
+  - name: {{ irb-2-name }}
+    spec:
+      bridgeDomain: {{ bridge-domain-2-name }}      # References bridge domain
+      router: {{ router-name }}                     # References router
+      description: "{{ irb-2-description }}"
+      arpTimeout: 14400
+      ipMTU: 1400
+      learnUnsolicited: NONE
+      ipAddresses:
+      - ipv4Address:
+          ipPrefix: {{ gateway-2-ip-with-cidr }}    # Anycast gateway IP
+          primary: true
+
+---
+# Template Variables:
+
+## Overall Configuration:
+# {{ virtualnetwork-name }}: Name for the VirtualNetwork (e.g., autol3, multi-vlan-network)
+# {{ namespace }}: Kubernetes namespace (e.g., clab-clabmcp)
+# {{ mac-aging-timeout }}: MAC aging timeout in seconds (default: 300)
+
+## Bridge Domains:
+# {{ bridge-domain-1-name }}: Name for first bridge domain (e.g., bd301, bd-vlan100)
+# {{ bridge-domain-1-description }}: Description for first bridge domain
+# {{ bridge-domain-2-name }}: Name for second bridge domain (e.g., bd302, bd-vlan200)
+# {{ bridge-domain-2-description }}: Description for second bridge domain
+
+## VLANs:
+# {{ vlan-1-name }}: Name for first VLAN (e.g., vlan301-leaf1, vlan100-access)
+# {{ vlan-1-id }}: VLAN ID for first VLAN as string (e.g., "301", "100")
+# {{ vlan-1-description }}: Description for first VLAN
+# {{ interface-label-1 }}: Label selector for first VLAN interfaces (e.g., bridge-domain-301=true)
+
+# {{ vlan-2-name }}: Name for second VLAN (e.g., vlan302-leaf3, vlan200-access)
+# {{ vlan-2-id }}: VLAN ID for second VLAN as string (e.g., "302", "200")
+# {{ vlan-2-description }}: Description for second VLAN
+# {{ interface-label-2 }}: Label selector for second VLAN interfaces (e.g., bridge-domain-302=true)
+
+## Router:
+# {{ router-name }}: Name for the router (typically same as VirtualNetwork name)
+# {{ router-description }}: Description for router functionality
+# {{ bgp-as-number }}: BGP autonomous system number (e.g., 65003, 65100)
+
+## IRB Interfaces:
+# {{ irb-1-name }}: Name for first IRB interface (e.g., irb-bd301, irb-vlan100)
+# {{ irb-1-description }}: Description for first IRB interface
+# {{ gateway-1-ip-with-cidr }}: Gateway IP with CIDR for first VLAN (e.g., 192.168.30.1/24)
+
+# {{ irb-2-name }}: Name for second IRB interface (e.g., irb-bd302, irb-vlan200)
+# {{ irb-2-description }}: Description for second IRB interface
+# {{ gateway-2-ip-with-cidr }}: Gateway IP with CIDR for second VLAN (e.g., 192.168.32.1/24)
+
+# Example Usage (based on provided sample):
+# virtualnetwork-name: autol3
+# namespace: clab-clabmcp
+# mac-aging-timeout: 300
+
+# bridge-domain-1-name: bd301
+# bridge-domain-1-description: "Bridge domain 301 for leaf1 connectivity"
+# bridge-domain-2-name: bd302
+# bridge-domain-2-description: "Bridge domain 302 for leaf3 connectivity"
+
+# vlan-1-name: vlan301-leaf1
+# vlan-1-id: "301"
+# vlan-1-description: "VLAN 301 for bridge domain bd301"
+# interface-label-1: bridge-domain-301=true
+
+# vlan-2-name: vlan302-leaf3
+# vlan-2-id: "302"
+# vlan-2-description: "VLAN 302 for bridge domain bd302"
+# interface-label-2: bridge-domain-302=true
+
+# router-name: autol3
+# router-description: "Auto L3 router for inter-VLAN routing"
+# bgp-as-number: 65003
+
+# irb-1-name: irb-bd301
+# irb-1-description: "IRB interface for bridge domain bd301"
+# gateway-1-ip-with-cidr: 192.168.30.1/24
+
+# irb-2-name: irb-bd302
+# irb-2-description: "IRB interface for bridge domain bd302"
+# gateway-2-ip-with-cidr: 192.168.32.1/24
+
+# Prerequisites:
+# 1. Apply interface labels before creating VirtualNetwork:
+#    kubectl label interface dc1-leaf1-ethernet-1-1 bridge-domain-301=true
+#    kubectl label interface dc1-leaf3-ethernet-1-1 bridge-domain-302=true
+
+# 2. Ensure pools exist: evi-pool, vni-pool, tunnel-index-pool
+
+# 3. Plan IP addressing to avoid conflicts
+
+# Scaling Notes:
+# - Add more bridge domains, VLANs, and IRB interfaces by duplicating sections
+# - Ensure unique VLAN IDs, bridge domain names, and IP subnets
+# - Use consistent label patterns for interface selection
         `;
         
         return {
